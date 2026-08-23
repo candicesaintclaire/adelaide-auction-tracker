@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Auction Watchlist",
+  "version": "0.1.0",
+  "description": "Save public StorageTreasures and Bid13 auction listings to your account-backed watchlist.",
+  "action": {
+    "default_title": "Auction Watchlist",
+    "default_popup": "popup.html",
+    "default_icon": "icon.svg"
+  },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "options_page": "options.html",
+  "permissions": ["activeTab", "alarms", "notifications", "storage", "tabs"],
+  "host_permissions": ["https://www.storagetreasures.com/*", "https://bid13.com/*"],
+  "optional_host_permissions": ["https://*.manus.space/*", "https://*.manus.computer/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.storagetreasures.com/*", "https://bid13.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
