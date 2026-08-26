@@ -79,11 +79,13 @@ export async function saveAuction(record) {
 // Photos are added, never removed. A listing that drops an image later
 // shouldn't make us forget we ever saw it.
 async function savePhotos(auctionId, urls) {
-  const rows = urls.slice(0, 24).map((url, position) => ({
-    auction_id: auctionId,
-    url,
-    position,
-  }));
+  // A site changing an image field from a URL to an object is exactly the kind
+  // of change that shouldn't reach the database as a row full of "[object Object]".
+  const rows = urls
+    .filter((u) => typeof u === "string" && /^https?:\/\//.test(u))
+    .slice(0, 24)
+    .map((url, position) => ({ auction_id: auctionId, url, position }));
+  if (!rows.length) return;
   const q = new URLSearchParams({ on_conflict: "auction_id,url" });
   await ok(
     await fetch(`${REST}/auction_photos?${q}`, {

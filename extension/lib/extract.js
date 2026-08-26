@@ -98,27 +98,47 @@
         ? "active"
         : "unknown";
 
-    // Manager's specials and private-seller units carry a type worth keeping
-    // in the name — they're a different proposition from a lien unit.
-    const kind = a.type_name && !/lien/i.test(a.type_name) ? a.type_name : null;
+    // Anything that isn't a plain lien unit is a different proposition and
+    // should say so on the list. The types read "Lien Unit" and
+    // "Non-Lien Unit / Manager Special" — so test the start of the string,
+    // not whether "lien" appears in it, or every non-lien unit looks like one.
+    // Keep the useful half: "Manager Special", not the whole mouthful.
+    const type = String(a.type_name ?? "").trim();
+    const kind = type && !/^lien\b/i.test(type) ? type.split("/").pop().trim() : null;
+
+    // StorageTreasures truncates long facility names in its own data, and in
+    // its own page. Keep the ellipsis so a clipped name doesn't read as a typo.
+    const facility_name = a.facility_name
+      ? String(a.facility_name).replace(/\.{3}$/, "…")
+      : null;
+
+    // `image` is an object, not a URL. Take the largest it offers.
+    const img = a.image;
+    const photo =
+      typeof img === "string"
+        ? img
+        : img?.image_path_large || img?.image_path || null;
+
+    // Counts arrive as strings: "2", not 2.
+    const bids = Number(a.total_bids);
 
     return {
       source: "storagetreasures",
       external_id: String(a.auction_id),
       canonical_url: location.origin + location.pathname,
       auto_name:
-        [a.unit_size, a.facility_name, kind].filter(Boolean).join(" · ") ||
+        [a.unit_size, facility_name, kind].filter(Boolean).join(" · ") ||
         document.title.split("|")[0].trim() ||
         null,
-      facility_name: a.facility_name ?? null,
+      facility_name,
       city: a.city ?? null,
       state: a.state ?? null,
       unit_size: a.unit_size ?? null,
-      bid_cents: cents(a.current_bid?.amount),
-      total_bids: typeof a.total_bids === "number" ? a.total_bids : null,
+      bid_cents: cents(Number(a.current_bid?.amount)),
+      total_bids: Number.isFinite(bids) ? bids : null,
       ends_at,
       status,
-      photos: a.image ? [a.image] : [],
+      photos: photo ? [photo] : [],
     };
   }
 
