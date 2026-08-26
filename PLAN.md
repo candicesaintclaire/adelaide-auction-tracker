@@ -141,9 +141,18 @@ run by unit tests. Everything after this assumes it works.
 > `dollars()` and `closing()` moved out of `popup.js` into `lib/format.js`, so
 > a bid cannot read two ways in two places. Tests 31 → 43.
 >
-> **What has not happened: a browser has never loaded it.** The module graph
-> resolves under node, every id referenced by `app.js` exists in the HTML, and
-> every local file it points at is there. None of that is the same as working.
+> **Driven in Chrome off a local server, with the two endpoints stubbed** so no
+> real account or data was touched. What that showed working: the page loads
+> and the signed-out state renders; `listAuctions` → sort → row rendering,
+> including a unit with no photo, a photo whose URL 404s, no bids, no closing
+> time, an ended one, and a bid that has moved; the inline rename, which sends
+> exactly **one** PATCH carrying only `nickname` — Enter commits and blur fires
+> straight after it, so without the guard that would have been two writes; and
+> no sideways scroll at phone width.
+>
+> **What that did not show:** real Google sign-in on the web, real Supabase
+> data, the service worker (it is gated on https), PWA install, or an actual
+> phone. Sign-in cannot be tried until the Pages URL is allow-listed.
 >
 > Two things deferred rather than done:
 > - **Photos are 440×250 thumbnails.** Full-size versions sit behind Bid13's

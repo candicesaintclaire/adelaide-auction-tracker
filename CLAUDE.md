@@ -31,13 +31,20 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
   where there had been none, `5x5`, the facility's real name, and starting
   prices told apart from real bids. Tagged `bid13-verified`.
 
-**Built but not yet seen working:**
+**Built, and half seen working:**
 
-- **Phase C, the watchlist page** — `index.html` plus `web/`. Written, tested
-  where testable, and statically checked, but **never loaded in a browser**:
-  GitHub Pages isn't on yet, and sign-in needs the Pages URL allow-listed in
-  Supabase. Treat it the way Bid13 deserved to be treated — assume it is wrong
-  somewhere until a browser says otherwise.
+- **Phase C, the watchlist page** — `index.html` plus `web/`. Driven in Chrome
+  off a local server with the Supabase endpoints stubbed, so no real account or
+  data was touched. Confirmed there: the list renders and sorts, the awkward
+  rows behave (no photo, a photo that 404s, no bids, no closing time, ended, a
+  bid that moved), the inline rename sends exactly one PATCH carrying only
+  `nickname`, and nothing scrolls sideways at phone width.
+
+  **Not confirmed:** real sign-in on the web, real data, the service worker
+  (gated on https), PWA install, or an actual phone. Sign-in cannot even be
+  attempted until the Pages URL is in Supabase's allow-list. Bid13 is the
+  precedent — code that has only passed tests has been wrong four times out of
+  four — so treat the untested half as wrong until a browser says otherwise.
 
 **Not done, roughly in the order it matters:**
 
