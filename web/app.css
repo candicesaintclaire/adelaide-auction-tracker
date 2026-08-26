@@ -105,6 +105,14 @@ button.icon {
   background: var(--paper); color: var(--ink);
 }
 
+.redirectnote { margin: 14px 0 0; line-height: 1.6; }
+code {
+  font-family: var(--mono); font-size: 11px;
+  padding: 1px 5px; border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  overflow-wrap: anywhere;
+}
+
 .err {
   margin-top: 16px; padding: 12px 14px; border-radius: 8px;
   border-left: 3px solid var(--signal);

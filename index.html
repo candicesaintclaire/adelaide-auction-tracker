@@ -10,6 +10,17 @@
 <link rel="icon" href="extension/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="web/icons/icon-192.png">
 <link rel="stylesheet" href="web/app.css">
+<script>
+  // Before anything else loads. GitHub Pages will serve this over plain http
+  // unless "Enforce HTTPS" is on, and http breaks three things at once:
+  // sign-in is refused, the service worker will not register, and the app
+  // cannot be installed to a home screen. Upgrading here means the site works
+  // whether or not that switch is set — the page still says so below.
+  // localhost is exempt: it is a secure context already and has no certificate.
+  if (location.protocol === "http:" && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+    location.replace("https:" + location.href.slice(location.protocol.length));
+  }
+</script>
 </head>
 <body>
 
@@ -30,6 +41,12 @@
   <section id="signedout" hidden>
     <p class="muted">Your watchlist is private to your account.</p>
     <button id="signin">Sign in with Google</button>
+    <p class="muted small redirectnote">
+      Sign-in returns to <code id="redirecturl"></code>. That exact address,
+      trailing slash and all, has to be listed under Supabase &rarr;
+      Authentication &rarr; URL Configuration. If it isn't, Google will send you
+      back and the sign-in will fail without ever mentioning why.
+    </p>
   </section>
 
   <section id="signedin" hidden>

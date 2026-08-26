@@ -6,7 +6,7 @@
 // what was saved, and says so.
 
 import { isConfigured } from "../extension/config.js";
-import { signIn, signOut, getUser, adoptRedirect } from "../extension/lib/auth.js";
+import { signIn, signOut, getUser, adoptRedirect, redirectUrl } from "../extension/lib/auth.js";
 import { listAuctions, setNickname } from "../extension/lib/db.js";
 import {
   dollars,
@@ -193,6 +193,12 @@ async function renderList() {
 
 async function render() {
   if (!isConfigured()) return show("setup");
+
+  // The commonest way for web sign-in to fail is an address that isn't in
+  // Supabase's allow-list — and it fails silently, so the page has to say
+  // which address it is actually going to use. A custom domain is enough to
+  // make this differ from whatever was pasted in during setup.
+  $("redirecturl").textContent = redirectUrl();
 
   const user = await getUser();
   $("who").textContent = user?.email ?? "";
