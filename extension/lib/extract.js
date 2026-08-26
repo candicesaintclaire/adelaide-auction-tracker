@@ -49,25 +49,37 @@
         : null;
     }
 
-    // Drupal stamps the node id onto the body: page-node-311086
-    const node = String(document.body.className).match(/page-node-(\d+)/);
+    const h1 = document.querySelector("h1");
 
-    // Drupal serves uploads from /sites/default/files/; everything else on the
-    // page is furniture. These arrive by script after load, which is why saving
-    // from a page you're looking at gets photos and a plain fetch can't.
-    const photos = [...document.images]
-      .map((img) => img.currentSrc || img.src)
-      .filter((u) => u && u.includes("/sites/default/files/"))
-      .filter((u, i, all) => all.indexOf(u) === i);
+    // Whether anyone has actually bid is stated beside the amount, never
+    // inside it: "STARTING BID $25 NO BIDS YET" against "CURRENT BID $40".
+    // A slice of the page's own text, bounded — parse.js reads it.
+    const flat = String(document.body.innerText || "").replace(/\s+/g, " ");
 
     return {
       source: "bid13",
       href,
-      nodeId: node ? node[1] : null,
+      // Drupal stamps the node id onto the body. Handed over whole: picking
+      // the id out of it is interpretation, and interpretation belongs where
+      // it can be tested. Note the class list carries a bare "page-node-"
+      // as well as the real one.
+      bodyClass: String(document.body.className),
       bidText: bidEl ? bidEl.textContent : null,
+      bidArea: flat.match(/(?:starting|current|high|winning)\s+bid.{0,120}/i)?.[0] ?? null,
       expiry: clock ? clock.getAttribute("data-expiry") : null,
-      heading: document.querySelector("h1")?.textContent ?? null,
-      photos,
+      heading: h1 ? h1.textContent : null,
+      // The line under the unit name carries the facility's real name —
+      // "Self Storage of Tacoma - East 44th" — which the URL slug loses.
+      facilityLine: h1?.nextElementSibling?.textContent ?? null,
+      // Unit type, size, tag number, deposit. One div or several; parse.js
+      // copes with either rather than this file guessing.
+      details: [...document.querySelectorAll(".unit-info-detail")].map((el) => el.textContent),
+      // Every image on the page, unfiltered. Choosing which are unit photos
+      // used to happen here, against /sites/default/files/ — a path bid13.com
+      // no longer serves from. Every Bid13 listing saved with no photos and
+      // nothing could catch it, because code that only runs inside a live
+      // page has no test to fail.
+      images: [...document.images].map((img) => img.currentSrc || img.src).filter(Boolean),
     };
   }
 

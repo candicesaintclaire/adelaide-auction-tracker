@@ -28,9 +28,10 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 
 **Not done, roughly in the order it matters:**
 
-1. **Bid13 has not been tested since the extract/parse split.** Its code was
-   rewritten in that refactor and has only ever been exercised by unit tests.
-   This is the first thing to check, not the last.
+1. **Bid13, half done.** Saving, dedup and navigation were confirmed by hand
+   on 26 August. Its reading was then checked against two live listings and
+   found wrong in four places, all now fixed and tested — but the fixed code
+   has not itself been run in Chrome. Re-save both units and check the row.
 2. **You can save listings but not look at them.** There is no list view
    anywhere — not in the popup, not on a phone. Saving into a void is the most
    obvious gap in the thing as it stands.
@@ -39,7 +40,9 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
    closing time in the raw HTML, and `lib/parse.js` already does the reading.
    One useful discovery — a single StorageTreasures request returns every
    auction at that facility, so several saved units at one place can cost one
-   request rather than one each.
+   request rather than one each. Bid13 may allow the same trick for a different
+   reason: two units at one facility carried an identical `data-expiry`, so a
+   facility seems to close as a batch. Observed twice, not established.
 4. **Nicknames.** The schema holds one and `db.js` is careful never to
    overwrite it. Nothing offers to set one.
 5. **The phone side.** Unstarted. Not on Manus servers; GitHub Pages was the
@@ -51,9 +54,17 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
   not a gallery.
 - Facility names arrive truncated (`SecureSpace Self Stora…`). That is genuinely
   all that exists, in their data and on their own page.
-- Bid13 publishes no bid count.
+- Bid13 publishes no bid count. It does say `NO BIDS YET` when there are none,
+  and `HIGH BIDDER D*****D` — masked, and useless to us — when there are. So
+  zero bids is knowable and any other number is not: `total_bids` is `0` or
+  `null`, never a guess.
+- Bid13's `#high-bid-amount` holds a *starting price* until someone bids, with
+  the label beside it flipping `STARTING BID` → `CURRENT BID`. Both go into
+  `bid_cents`; `total_bids` is what distinguishes them.
 - Bid13 photos are loaded by script, so they are captured when saving from a
-  desktop browser and missed by any server-side fetch.
+  desktop browser and missed by any server-side fetch. They arrive as 440x250
+  thumbnails from `uccdn.bid13.com/thumbs/`; the full-size versions live behind
+  "View all photos of this unit" and are not read.
 
 **Decided but not designed:**
 
@@ -110,3 +121,14 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **Verify through the path the code actually takes.** Three of the bugs here
   survived a check that used `fetch(location.href)` while the extension reads
   the DOM.
+- **Interpretation inside `extract.js` cannot be tested, so it hides bugs.**
+  Photo selection lived there, filtering on `/sites/default/files/` — a path
+  bid13.com stopped serving from. Every Bid13 listing saved with no photos at
+  all, silently, and the test suite was green throughout. Selection and id
+  extraction now live in `parse.js`. `extract.js` gathers; nothing else.
+- **Believing a comment over the page.** `unit_size: null, // Bid13 doesn't
+  publish one` — it publishes it, in `div.unit-info-detail`, along with the
+  unit type. So does the facility's real name, on the line under the `<h1>`,
+  which beats the one the URL slug implies.
+- **`HIGH BIDDER` begins with `BID`.** A bid-count regex needs its `\b`, for
+  the same reason `"Non-Lien"` needs an anchor.

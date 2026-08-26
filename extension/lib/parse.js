@@ -171,6 +171,72 @@ export function parseStorageTreasures(nextDataText, href) {
 // Drupal, rendered on the server, with ordinary page loads — so what is in
 // the document always belongs to the URL in the address bar. The gathering
 // happens in extract.js; this only interprets it.
+
+// Drupal stamps the node id onto <body>: page-node-309691. The class list
+// also carries a bare "page-node-" with nothing after it, which is why the
+// digits are required rather than optional.
+export const bid13NodeId = (bodyClass) =>
+  String(bodyClass ?? "").match(/page-node-(\d+)/)?.[1] ?? null;
+
+// Which of a page's images are photographs of the unit.
+//
+// Bid13 serves uploaded media from its own CDN, uccdn.bid13.com, under
+// /thumbs/. Everything under /images/ on that host is furniture — the video
+// placeholder, badges. Drupal's own upload path is still accepted because a
+// site that once used it may use it again.
+export function bid13Photos(urls) {
+  const isPhoto = (u) => {
+    let parsed;
+    try {
+      parsed = new URL(u);
+    } catch {
+      return false;
+    }
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    if (parsed.pathname.includes("/sites/default/files/")) return true;
+    return (
+      /(^|\.)uccdn\.bid13\.com$/.test(parsed.hostname) &&
+      !parsed.pathname.startsWith("/images/")
+    );
+  };
+  return [...new Set((urls ?? []).filter((u) => typeof u === "string" && isPhoto(u)))];
+}
+
+// The AUCTION INFO block, whether it arrives as one element or as one per
+// field. Splitting on the labels themselves handles both without this having
+// to know which shape today's markup uses.
+const BID13_LABELS =
+  /(?=Unit Type|Tag Number|Unit Size|Deposit|Cleanout Time|Location|Phone)/;
+
+export function bid13Details(chunks) {
+  const out = {};
+  for (const chunk of [].concat(chunks ?? [])) {
+    for (const piece of String(chunk).split(BID13_LABELS)) {
+      const m = piece.match(/^\s*([A-Za-z][A-Za-z ]*?)\s*:\s*([\s\S]+?)\s*$/);
+      if (m) out[m[1].toLowerCase()] = m[2].replace(/\s+/g, " ").trim();
+    }
+  }
+  return out;
+}
+
+// "Self Storage of Tacoma - East 44th , Tacoma, WA" — the line under the unit
+// name. The URL slug gives "Self Storage Tacoma East 44th": close, but not the
+// name the place actually goes by. Read right-to-left, so a facility name
+// containing a comma stays intact.
+export function bid13Place(line) {
+  const parts = String(line ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return {};
+  const state = /^[A-Za-z]{2}$/.test(parts[parts.length - 1])
+    ? parts[parts.length - 1].toUpperCase()
+    : null;
+  const city = state ? parts[parts.length - 2] : parts[parts.length - 1];
+  const name = parts.slice(0, state ? -2 : -1).join(", ").trim();
+  return { facility_name: name || null, city: city || null, state };
+}
+
 export function parseBid13(g) {
   if (!g?.bidText && !g?.expiry) {
     return { problem: "This looks like a listing, but the bid and clock weren't where Adelaide expects." };
@@ -184,9 +250,11 @@ export function parseBid13(g) {
     }
   })();
 
-  const state = parts[1]?.length === 2 ? parts[1].toUpperCase() : null;
-  const city = parts[2] ? titleize(parts[2]) : null;
-  const facility = parts[3] ? titleize(parts[3]) : null;
+  // The page's own words win; the URL is the fallback when the line is absent.
+  const place = bid13Place(g.facilityLine);
+  const facility = place.facility_name ?? (parts[3] ? titleize(parts[3]) : null);
+  const city = place.city ?? (parts[2] ? titleize(parts[2]) : null);
+  const state = place.state ?? (parts[1]?.length === 2 ? parts[1].toUpperCase() : null);
 
   const expiry = Number(g.expiry);
   const ends_at =
@@ -194,19 +262,33 @@ export function parseBid13(g) {
 
   const unit = g.heading?.trim() || titleize(parts[parts.length - 1]);
 
+  const detail = bid13Details(g.details);
+
+  // Same rule as StorageTreasures: a lien unit is the ordinary case and gets
+  // no label; anything else keeps the useful half of its type.
+  const type = detail["unit type"] ?? "";
+  const kind = type && !/^lien\b/i.test(type) ? type.split("/").pop().trim() : null;
+
+  // Bid13 publishes no running bid count, but it does say outright when there
+  // are none — and "no bids yet, opens at $25" is a different thing from "bid
+  // up to $25". Anything it does print is believed.
+  const area = String(g.bidArea ?? "");
+  const counted = area.match(/(\d+)\s+bids?\b/i);
+  const total_bids = counted ? Number(counted[1]) : /no bids? yet/i.test(area) ? 0 : null;
+
   return {
     source: "bid13",
-    external_id: g.nodeId ?? parts.join("/"),
+    external_id: bid13NodeId(g.bodyClass) ?? parts.join("/"),
     canonical_url: g.href.split("?")[0].split("#")[0],
-    auto_name: [unit, facility].filter(Boolean).join(" · ") || null,
+    auto_name: [unit, facility, kind].filter(Boolean).join(" · ") || null,
     facility_name: facility,
     city,
     state,
-    unit_size: null,       // Bid13 doesn't publish one
+    unit_size: detail["unit size"] ?? null,
     bid_cents: money(g.bidText),
-    total_bids: null,      // nor a bid count
+    total_bids,
     ends_at,
     status: ends_at ? (new Date(ends_at) < new Date() ? "ended" : "active") : "unknown",
-    photos: g.photos ?? [],
+    photos: bid13Photos(g.images),
   };
 }

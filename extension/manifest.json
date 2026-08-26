@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Adelaide",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A storage-auction watchlist. Saves listings you choose, and never does anything on its own.",
   "action": {
     "default_title": "Adelaide",
