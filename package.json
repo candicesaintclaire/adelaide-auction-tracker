@@ -1,0 +1,9 @@
+{
+  "name": "adelaide",
+  "private": true,
+  "type": "module",
+  "description": "Marks the extension's .js files as ES modules so `node --test` can import them. There are no dependencies and nothing to install \u2014 the extension loads as a folder, not a build.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
