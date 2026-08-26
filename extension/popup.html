@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="popup.css">
+<header>
+  <h1>Adelaide</h1>
+  <span class="who" id="who"></span>
+</header>
+<main>
+  <div id="setup" class="hidden">
+    <p>Not connected to a database yet.</p>
+    <p class="muted">Open the options page and follow the setup steps, then reload the extension.</p>
+    <button id="options" class="quiet">Open options</button>
+  </div>
+
+  <div id="signedout" class="hidden">
+    <p class="muted">Your watchlist is private to your account.</p>
+    <button id="signin">Sign in with Google</button>
+  </div>
+
+  <div id="signedin" class="hidden">
+    <div id="nolisting" class="hidden">
+      <p class="muted">This isn't an auction listing.</p>
+      <p class="muted small">Open a unit on StorageTreasures or Bid13 and click Adelaide again.</p>
+    </div>
+
+    <div id="listing" class="hidden">
+      <p class="name" id="name"></p>
+      <dl class="facts" id="facts"></dl>
+      <button id="save">Save to watchlist</button>
+      <p class="saved-note muted small hidden" id="savednote"></p>
+    </div>
+
+    <button id="signout" class="quiet foot">Sign out</button>
+  </div>
+
+  <div id="error" class="err hidden"></div>
+</main>
+<script type="module" src="popup.js"></script>

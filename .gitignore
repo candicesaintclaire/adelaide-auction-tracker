@@ -5,3 +5,7 @@ dist/
 .env
 .env.*
 *.zip
+
+# Your project URL and key. Real values stay on your machine; the shape of the
+# file is kept in config.example.js so a fresh clone knows what to fill in.
+extension/config.js

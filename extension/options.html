@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Adelaide — setup</title>
+<link rel="stylesheet" href="popup.css">
+<style>
+  body { width: auto; max-width: 620px; margin: 0 auto; padding: 28px 24px 60px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em;
+       color: var(--muted); margin: 28px 0 10px; font-weight: 600; }
+  .field { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .field code {
+    flex: 1; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px;
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+    overflow-x: auto; white-space: nowrap; font-size: 12px;
+  }
+  .field button { width: auto; flex: 0 0 auto; padding: 9px 14px; }
+  .status { display: flex; gap: 9px; align-items: flex-start; margin: 6px 0; line-height: 1.5; }
+  .dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; background: var(--line); }
+  .dot.ok { background: var(--accent); }
+  .dot.no { background: var(--signal); }
+</style>
+
+<h1 style="font-size:20px;margin:0 0 6px">Adelaide setup</h1>
+<p class="muted">Everything on this page is something the setup guide asks you for.</p>
+
+<h2>Paste this into Supabase</h2>
+<p class="muted">Authentication → URL Configuration → Redirect URLs. Chrome derives it from where
+  this folder lives, so <b>don't move or rename the folder</b> after adding it.</p>
+<div class="field">
+  <code id="redirect">…</code>
+  <button id="copy" class="quiet">Copy</button>
+</div>
+<p class="muted">Extension ID: <code id="extid">…</code></p>
+
+<h2>Connection</h2>
+<div id="checks"></div>
+<button id="recheck" class="quiet" style="width:auto;margin-top:10px">Check again</button>
+
+<script type="module" src="options.js"></script>

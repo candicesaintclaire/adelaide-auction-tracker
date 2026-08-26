@@ -1,0 +1,59 @@
+:root {
+  --accent:  #0E6F66;
+  --signal:  #B4501C;
+  --ink:     #1C1B19;
+  --muted:   #6B6A66;
+  --line:    #DFDDD7;
+  --paper:   #FBFAF7;
+  --ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink:#EDEBE6; --muted:#9C9A94; --line:#383632; --paper:#1B1A18; --accent:#4FA79C; }
+}
+* { box-sizing: border-box; }
+body {
+  width: 340px; margin: 0; padding: 0;
+  font-family: var(--ui); font-size: 14px;
+  color: var(--ink); background: var(--paper);
+}
+header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 16px 10px; border-bottom: 1px solid var(--line);
+}
+h1 { margin: 0; font-size: 15px; letter-spacing: .02em; font-weight: 600; }
+.who { font-size: 11px; color: var(--muted); }
+main { padding: 16px; }
+p { margin: 0 0 12px; line-height: 1.5; }
+.muted { color: var(--muted); font-size: 12px; }
+button {
+  font: inherit; font-weight: 500; cursor: pointer;
+  width: 100%; padding: 10px 14px; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+}
+button:hover { filter: brightness(1.08); }
+button.quiet { background: none; color: var(--muted); border-color: var(--line); }
+button[disabled] { opacity: .55; cursor: default; }
+.err {
+  margin-top: 12px; padding: 10px 12px; border-radius: 6px;
+  border-left: 3px solid var(--signal); background: color-mix(in srgb, var(--signal) 8%, transparent);
+  font-size: 12px; line-height: 1.5;
+}
+code { font-family: var(--mono); font-size: 11px; }
+.hidden { display: none; }
+
+/* ── a listing, as read off the page in front of you ── */
+.name {
+  font-size: 15px; font-weight: 600; line-height: 1.35;
+  margin: 0 0 12px; text-wrap: balance;
+}
+.facts {
+  display: grid; grid-template-columns: auto 1fr; gap: 6px 14px;
+  margin: 0 0 16px; padding: 12px 0; font-size: 13px;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.facts dt { color: var(--muted); font-size: 12px; }
+.facts dd { margin: 0; text-align: right; font-family: var(--mono); font-size: 12px; }
+.small { font-size: 11px; }
+.saved-note { margin: 10px 0 0; line-height: 1.5; }
+.foot { margin-top: 18px; }
