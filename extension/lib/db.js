@@ -46,6 +46,39 @@ export async function findSaved(source, externalId) {
   return rows[0] ?? null;
 }
 
+// The whole watchlist, with each unit's photos alongside it.
+//
+// No owner filter here either, for the same reason: the database decides. The
+// photos come back in one request rather than one per unit — PostgREST embeds
+// them because auction_photos points at auctions.
+export async function listAuctions() {
+  const q = new URLSearchParams({
+    select:
+      "id,source,external_id,canonical_url,auto_name,nickname,facility_name,city,state," +
+      "unit_size,bid_cents,first_bid_cents,total_bids,ends_at,status,enriched_at," +
+      "last_refreshed_at,auction_photos(url,position)",
+    order: "ends_at.asc.nullslast",
+  });
+  q.set("auction_photos.order", "position.asc");
+  const res = await ok(await fetch(`${REST}/auctions?${q}`, { headers: await headers() }));
+  return res.json();
+}
+
+// The one field a person owns. Blank clears it, which is not the same as
+// leaving it alone: an empty nickname means "go back to the site's name".
+export async function setNickname(id, nickname) {
+  const wanted = String(nickname ?? "").trim();
+  const q = new URLSearchParams({ id: `eq.${id}`, select: "id,nickname" });
+  const res = await ok(
+    await fetch(`${REST}/auctions?${q}`, {
+      method: "PATCH",
+      headers: await headers({ prefer: "return=representation" }),
+      body: JSON.stringify({ nickname: wanted || null }),
+    })
+  );
+  return (await res.json())[0] ?? null;
+}
+
 // Save, or update in place if this listing is already on the list.
 //
 // Only the columns we actually read off the page are sent, and that matters:

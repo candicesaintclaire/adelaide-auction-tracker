@@ -1,6 +1,7 @@
 import { isConfigured } from "./config.js";
 import { signIn, signOut, getUser } from "./lib/auth.js";
 import { findSaved, saveAuction } from "./lib/db.js";
+import { dollars, closing, title } from "./lib/format.js";
 import {
   parseStorageTreasures,
   parseBid13,
@@ -22,27 +23,6 @@ const fail = (e) => {
   box.textContent = e.message || String(e);
   box.classList.remove("hidden");
 };
-
-const dollars = (c) =>
-  typeof c === "number"
-    ? "$" +
-      (c / 100).toLocaleString("en-US", {
-        minimumFractionDigits: c % 100 ? 2 : 0,
-        maximumFractionDigits: 2,
-      })
-    : "—";
-
-// "in 3 days", "in 4 hr" — a duration reads faster than a date when the only
-// question is whether there's still time.
-function closing(iso) {
-  if (!iso) return "—";
-  const ms = new Date(iso) - new Date();
-  if (ms <= 0) return "closed";
-  const hours = ms / 3.6e6;
-  if (hours < 1) return `in ${Math.round(ms / 6e4)} min`;
-  if (hours < 48) return `in ${Math.round(hours)} hr`;
-  return `in ${Math.round(hours / 24)} days`;
-}
 
 // Look at the page in front of you. This runs only because you opened the
 // popup — there is no content script sitting on these sites.
@@ -94,7 +74,7 @@ let current = null; // what the page says
 let saved = null;   // what we already hold, if anything
 
 function renderListing() {
-  $("name").textContent = saved?.nickname || current.auto_name || "Untitled unit";
+  $("name").textContent = title({ ...current, nickname: saved?.nickname });
 
   const rows = [
     ["Current bid", dollars(current.bid_cents)],
