@@ -1,13 +1,38 @@
 # Adelaide — plan for the rest of the build
 
 > **Approved 26 August 2026.** Copied into the repo from the planning session
-> so it survives this laptop. The text below is the approved plan unchanged.
->
-> Status: **not started.** Begin at **Phase A** (verify Bid13) — it is small,
-> and everything after it assumes Bid13 works.
+> so it survives this laptop. The phase text below is the approved plan
+> unchanged; only the status lines have been added as work has landed.
 >
 > `CLAUDE.md` is the authority on what is done; this file on what comes next.
-> Read both. (The pointer from `CLAUDE.md` is in place — that was step 1.)
+> Read both.
+
+## Where the plan stands — 26 August 2026
+
+| Phase | | |
+|---|---|---|
+| **A** | Verify Bid13 | **Done**, tagged `bid13-verified` |
+| **B** | Go public, honestly | **Written.** Banner and notes are in. *She flips the repo public.* |
+| **C** | The watchlist page | **Built, never loaded in a browser.** |
+| **D** | Refresh engine, saving from a phone | Not started. Needs one decision from her — see below. |
+| **E** | Ended auctions and final prices | Not started |
+| **F** | Contacting the two sites | Not started |
+
+**The next three things, in order:**
+
+1. **Flip the repo public**, then **Settings → Pages → deploy from `main`,
+   root**. Her call, not something to do on her behalf.
+2. **Add the Pages URL to Supabase** → Authentication → URL Configuration:
+   `https://candicesaintclaire.github.io/adelaide-auction-tracker/`. Without
+   it, sign-in on the web fails with an error that never mentions allow-lists.
+3. **Open the page and find what's wrong with it.** Phase A is the precedent:
+   code that has only ever passed tests has been wrong four times out of four.
+
+**The decision Phase D is waiting on** is at the bottom of that section, and it
+is not mine to make: whether Adelaide's *server* may fetch bid13.com at all.
+Their robots.txt asks for a five-second delay and disallows ClaudeBot by name.
+Nothing else in D is blocked by it — the StorageTreasures half can be built
+either way.
 
 ## Context
 
@@ -43,7 +68,19 @@ Two things changed during planning and shape everything below:
 
 ---
 
-## Phase A — Verify Bid13 *(small, first)*
+## Phase A — Verify Bid13 *(small, first)* — **done**
+
+> **Outcome.** Four bugs, found by probing two live listings rather than
+> trusting the fixtures: photos filtered on a path bid13.com no longer serves
+> from (every listing had saved with none), `unit_size` hardcoded `null` beside
+> a comment claiming the site doesn't publish it, the facility name titleised
+> off the URL slug instead of read off the page, and a *starting price* stored
+> as if it were a current bid. Tests 17 → 31. Confirmed in the database: 11
+> photos per unit, `5x5`, the real facility name. Tagged `bid13-verified`.
+>
+> The general fix mattered more than the four: photo selection had been living
+> in `extract.js`, which only runs inside a live page and therefore has no test
+> that can fail. It is in `parse.js` now, with the node-id extraction.
 
 Bid13's reader was rewritten in the extract/parse split and has only ever been
 run by unit tests. Everything after this assumes it works.
@@ -58,7 +95,15 @@ run by unit tests. Everything after this assumes it works.
 
 ---
 
-## Phase B — Go public, honestly
+## Phase B — Go public, honestly — **written; the flip is hers**
+
+> **Outcome.** Banner is in `README.md`; the audience note is in `CLAUDE.md`
+> under "Rules that do not change". The repo itself has **not** been flipped —
+> making something public is not a thing to do on someone's behalf.
+>
+> Checked before recommending it: `extension/config.js` had never been
+> committed in any form, and the history holds no `sb_secret_`, `service_role`
+> or password. It *is* committed now, deliberately — see Phase C.
 
 - **Flip the repo to public.**
 - **README banner** using a GitHub alert block, which renders as a real
@@ -83,7 +128,29 @@ run by unit tests. Everything after this assumes it works.
 
 ---
 
-## Phase C — The watchlist web app
+## Phase C — The watchlist web app — **built, unproven**
+
+> **Outcome.** `index.html`, `web/app.js`, `web/app.css`, `app.webmanifest`,
+> `sw.js`, and PWA icons rendered from `extension/icon.svg`.
+>
+> The auth split went as the plan described, and smaller: the two things that
+> actually differ are *where a session is kept* and *how the Google window
+> opens*. Both live in `extension/lib/platform.js`, chosen by detection rather
+> than wiring, so there is no setup step to forget. Everything else — token
+> handling, refresh, expiry — is shared, and `db.js` needed no change at all.
+> `dollars()` and `closing()` moved out of `popup.js` into `lib/format.js`, so
+> a bid cannot read two ways in two places. Tests 31 → 43.
+>
+> **What has not happened: a browser has never loaded it.** The module graph
+> resolves under node, every id referenced by `app.js` exists in the HTML, and
+> every local file it points at is there. None of that is the same as working.
+>
+> Two things deferred rather than done:
+> - **Photos are 440×250 thumbnails.** Full-size versions sit behind Bid13's
+>   "View all photos of this unit" and would need another probe.
+> - **`config.js` is now committed**, as the plan called for. Repo is still
+>   private, so nothing is exposed yet — the moment to object is *before* the
+>   flip, and it would cost a history rewrite afterwards.
 
 A plain static site: no framework, no build step, matching the extension.
 

@@ -7,6 +7,13 @@ it has moved.
 
 Built for three people. Not on the Chrome Web Store, and not meant to be.
 
+> [!WARNING]
+> **Pre-alpha — not suitable for public use.** As of 26 August 2026 this is in
+> active development by one person for three people. No support, no stability,
+> breaking changes without notice, and no guarantee that any number it shows
+> you is correct. Anyone forking it is responsible for their own compliance
+> with the auction sites' terms.
+
 ---
 
 ## Restoring this on a new machine
@@ -22,23 +29,26 @@ cd adelaide-auction-tracker
 npm test          # nothing to install — this is node's own test runner
 ```
 
-**2. Put the Supabase details back.**
+**2. There is no step 2.**
 
-`extension/config.js` is deliberately not in this repo — it holds the project
-address and key. Copy the example and fill in the two values, both of which
-are visible in the Supabase dashboard at any time:
+`extension/config.js` is in the repo now. It holds the project address and the
+publishable key, and both are designed to be public: the key grants nothing on
+its own, because every table's access rule requires a signed-in owner, and
+sign-in is limited to three Google test users. What is exposed is junk traffic,
+not data.
 
-```
-cp extension/config.example.js extension/config.js
-```
-
-| Value | Where it is |
-|---|---|
-| Project URL | Project Settings → Data API. Or build it: the dashboard URL ends in your project ref, and the address is `https://<ref>.supabase.co` |
-| Publishable key | Project Settings → API Keys → *Publishable and secret* tab, the one starting `sb_publishable_` |
+That is a deliberate trade, made because the watchlist page is a static site
+and has to ship those two values in its files anyway — so keeping a second,
+hidden copy bought nothing and cost a setup step.
 
 Never the key starting `sb_secret_`, and never the legacy `service_role` one.
-Those bypass every privacy rule in the database and belong on a server.
+Those bypass every privacy rule in the database, belong on a server, and belong
+in no repository at all.
+
+*Pointing this at a different Supabase project?* `extension/config.example.js`
+shows the shape. Both values are in the dashboard: Project Settings → Data API
+for the URL, and Project Settings → API Keys → *Publishable and secret* for the
+key beginning `sb_publishable_`.
 
 **3. Load it into Chrome.**
 
@@ -63,18 +73,31 @@ is `https://<ref>.supabase.co/auth/v1/callback`, and the extension's
 ## Layout
 
 ```
+index.html          the watchlist, as a web page
+app.webmanifest     makes it installable on a phone
+sw.js               service worker — offline shell only, nothing in background
+web/app.js          the watchlist's own code; imports the extension's modules
+web/app.css
 extension/
   manifest.json     no background worker, no alarms, no content scripts
-  popup.*           the whole interface
+  popup.*           the extension's interface
   options.*         setup helper: shows the redirect URL, checks the connection
+  config.js         project URL and publishable key — shared by both, committed
   lib/auth.js       Google sign-in, written against Supabase's HTTP API
+  lib/platform.js   the only two things that differ between Chrome and the web
   lib/db.js         reads and writes auctions
+  lib/format.js     how a figure or a time is written, in one place
   lib/extract.js    injected into a listing page; gathers, interprets nothing
   lib/parse.js      interprets; touches no DOM, no network, no chrome API
-  test/             runs lib/parse.js in node, no browser needed
+  test/             runs the lib/ modules in node, no browser needed
 supabase/migrations/  the schema
 legacy/               the original Manus version, kept for reference
 ```
+
+The watchlist page is not a second copy of anything. It imports
+`extension/lib/` directly — same sign-in, same database code, same formatting —
+which is why GitHub Pages serves from the repository root rather than from a
+build directory.
 
 No build step and no dependencies. The extension is a folder Chrome loads
 directly, and `package.json` exists only so `node --test` knows these files are
@@ -84,6 +107,32 @@ ES modules.
 listing page is where the mistakes have been, so it lives in a file that can be
 run and checked without a browser or a live auction. If a site redesigns, those
 two files are what change.
+
+---
+
+## The watchlist page
+
+`index.html` is the same watchlist, on a phone or in any browser. A plain
+static site — no framework, no build step — served by GitHub Pages from the
+repository root.
+
+**It cannot read an auction site.** A web page is forbidden from fetching
+storagetreasures.com or bid13.com; the browser blocks it, and no amount of code
+gets around that. So the page shows each bid as it was when that listing was
+last saved, and says so on screen rather than implying it is live. Re-reading
+needs something server-side, which is the next milestone.
+
+**Signing in needs its address allow-listed.** Supabase must have the Pages URL
+under Authentication → URL Configuration, exactly:
+`https://<user>.github.io/adelaide-auction-tracker/`. The extension's
+`chromiumapp.org` address stays alongside it — both flows work at once, and
+they share the session logic in `lib/auth.js`. Only *where the session is kept*
+and *how the Google window opens* differ, and those two things are all that
+`lib/platform.js` contains.
+
+**Nicknames are edited here.** The database has always held one and `db.js` has
+always refused to overwrite it on a save. This is the first thing that offers
+to set it.
 
 ---
 

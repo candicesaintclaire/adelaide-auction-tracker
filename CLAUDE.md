@@ -6,8 +6,9 @@ the code, the code is right and this needs updating.
 
 **[PLAN.md](PLAN.md) says what comes next** — the approved plan for the rest of
 the build, phases A to F. The two files divide the work between them: this one
-is the authority on what is *done*, `PLAN.md` on what is *not yet started*. The
-next thing to do is Phase A, verifying Bid13.
+is the authority on what is *done*, `PLAN.md` on what is *not yet started*.
+Phases A, B and C are built; the next thing needing *her* is flipping the repo
+public and switching GitHub Pages on.
 
 Design document (milestones, reasoning, open questions):
 https://claude.ai/code/artifact/b70f24b6-7db1-4df4-a706-4f0ece72d831
@@ -25,16 +26,28 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **M1, StorageTreasures half** — save a listing in one click, auto-named.
   Lien and non-lien units both read correctly, and navigating between units
   without reloading now saves the right one.
+- **M1, Bid13 half** — Phase A. Four field-reading bugs found by probing two
+  live listings; fixed, tested, and confirmed in the database: 11 photos each
+  where there had been none, `5x5`, the facility's real name, and starting
+  prices told apart from real bids. Tagged `bid13-verified`.
+
+**Built but not yet seen working:**
+
+- **Phase C, the watchlist page** — `index.html` plus `web/`. Written, tested
+  where testable, and statically checked, but **never loaded in a browser**:
+  GitHub Pages isn't on yet, and sign-in needs the Pages URL allow-listed in
+  Supabase. Treat it the way Bid13 deserved to be treated — assume it is wrong
+  somewhere until a browser says otherwise.
 
 **Not done, roughly in the order it matters:**
 
-1. **Bid13, half done.** Saving, dedup and navigation were confirmed by hand
-   on 26 August. Its reading was then checked against two live listings and
-   found wrong in four places, all now fixed and tested — but the fixed code
-   has not itself been run in Chrome. Re-save both units and check the row.
-2. **You can save listings but not look at them.** There is no list view
-   anywhere — not in the popup, not on a phone. Saving into a void is the most
-   obvious gap in the thing as it stands.
+1. **Two things only she can do.** Flip the repo public; turn on GitHub Pages
+   (Settings → Pages → deploy from `main`, root). Then add the Pages URL to
+   Supabase → Authentication → URL Configuration, or sign-in fails with an
+   error that will not mention allow-lists.
+2. **Two stale rows.** `309693` and `311757` were saved before the Bid13 fixes
+   and still hold slug names, no size and no photos. One click on each fixes
+   them; nothing is broken until then.
 3. **M2, the refresh.** A Supabase Edge Function re-reading saved listings on
    demand. Unblocked: the spike proved both sites give up the bid and the
    closing time in the raw HTML, and `lib/parse.js` already does the reading.
@@ -43,10 +56,10 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
    request rather than one each. Bid13 may allow the same trick for a different
    reason: two units at one facility carried an identical `data-expiry`, so a
    facility seems to close as a batch. Observed twice, not established.
-4. **Nicknames.** The schema holds one and `db.js` is careful never to
-   overwrite it. Nothing offers to set one.
-5. **The phone side.** Unstarted. Not on Manus servers; GitHub Pages was the
-   idea.
+4. **Nicknames.** Editable on the watchlist page now — untried in a browser,
+   like the rest of it.
+5. **Saving from a phone.** Needs the `save` Edge Function, so it arrives with
+   the refresh in Phase D, not before. A web page cannot read an auction site.
 
 **Known and deliberate, not bugs:**
 
@@ -79,9 +92,11 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **Commit and push together.** GitHub is the backup; the laptop is
   second-hand and unreliable. Never force-push without asking.
 - **Tag states she has personally seen work**, so there is always something to
-  return to. `m1-verified` is the current one.
-- **`npm test` before committing anything that touches `lib/parse.js`.**
-  Nothing to install; it is node's own runner.
+  return to. `bid13-verified` is the current one. A tag means a browser showed
+  it working, not that the tests passed.
+- **`npm test` before committing anything under `lib/`.** Nothing to install;
+  it is node's own runner. The popup and the watchlist page share every module
+  in there, so a change now moves two things at once.
 - **At a stopping point:** update the section above, commit, push, and leave a
   short handoff in the conversation. Next session starts by reading this file
   and PLAN.md.
@@ -96,8 +111,17 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **Three people.** Her, her boyfriend, her friend. Not the Chrome Web Store,
   not public. Enforced by Google: the OAuth consent screen stays in **Testing**
   with three test users. Never press "Publish app".
-- **`extension/config.js` stays out of git.** It holds the project URL and the
-  publishable key. It has never been committed; keep it that way.
+- **The audience may widen later, and that changes the standard.** The code is
+  public even while the users are three. So politeness to the two auction sites
+  is an obligation rather than a courtesy: every outbound request goes through
+  one place that honours `site_config`, and identifies itself. Going past three
+  users would need Google to verify the OAuth consent screen — a separate,
+  deliberate act, not a slip.
+- **`extension/config.js` is committed, on purpose.** The project URL and
+  publishable key are both designed to be public, and the static site has to
+  ship them regardless. Row-level security means an unauthenticated request
+  returns nothing. What must never be committed is an `sb_secret_` key, a
+  `service_role` key, or any password.
 - **Never ask for or accept** a password, a database password, an
   `sb_secret_` key or a `service_role` key.
 - **Bid13's robots.txt asks for `Crawl-delay: 5` and disallows ClaudeBot.**
