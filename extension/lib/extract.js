@@ -1,18 +1,18 @@
 // Runs inside the auction page itself, on demand, only when the popup is opened.
 // Not a content script: nothing here executes while you browse.
 //
-// Returns one plain object, or null if this page isn't a listing we understand.
-// Money is always in cents. Times are always ISO strings in UTC.
+// Returns one of three things:
+//   null                  — not a site we know
+//   { problem: "..." }    — our site, but the page didn't give up its numbers
+//   { source, ... }       — a listing, ready to save
 //
-// The field locations below were read off both sites directly rather than guessed.
-// If a site redesigns, this file is the only place that has to change.
+// Money is always in cents. Times are always ISO strings in UTC.
 
 (() => {
   const cents = (n) =>
     typeof n === "number" && isFinite(n) ? Math.round(n * 100) : null;
 
   const money = (text) => {
-    // "$1,250" and "$1,250.50" both land here
     const m = String(text || "").replace(/[^0-9.]/g, "");
     return m === "" ? null : cents(parseFloat(m));
   };
@@ -25,24 +25,68 @@
       .join(" ");
 
   // ── StorageTreasures ────────────────────────────────────────
-  // A Next.js app. Everything we need is in the hydration payload,
-  // which is plain JSON sitting in the HTML before any script runs.
+  // A Next.js app: the whole page state is JSON in the HTML before any
+  // script runs. There are at least four kinds of listing — lien units,
+  // manager's specials, private-seller units, charity units — and they do
+  // not all sit in the same place in that JSON.
+  //
+  // So don't navigate to where the auction was last seen. Search the payload
+  // for it. An auction is any object carrying an auction_id; the one we want
+  // is the one whose id matches the page we're on. That holds for every kind
+  // of listing, including kinds that don't exist yet.
   function storagetreasures() {
     const tag = document.getElementById("__NEXT_DATA__");
-    if (!tag) return null;
+    if (!tag) return { problem: "This page didn't include the data block Adelaide reads." };
 
     let data;
     try {
       data = JSON.parse(tag.textContent);
     } catch {
-      return null;
+      return { problem: "The page's data block wasn't readable." };
     }
 
-    const wanted = String(data?.props?.pageProps?.auction_id ?? "");
-    const list = data?.props?.initialState?.facility?.auctions ?? [];
-    // The payload carries every auction at this facility, not just this one.
-    const a = list.find((x) => String(x.auction_id) === wanted) ?? null;
-    if (!a) return null;
+    // The id is in the URL: /auctions/wa/vancouver/6562985
+    const fromUrl = (location.pathname.match(/(\d{4,})\/?$/) || [])[1] ?? null;
+    const wanted = String(data?.props?.pageProps?.auction_id ?? fromUrl ?? "");
+
+    const found = [];
+    const seen = new Set();
+    (function walk(node, depth) {
+      if (!node || typeof node !== "object" || depth > 12 || seen.has(node)) return;
+      seen.add(node);
+      if (Array.isArray(node)) {
+        for (const item of node) walk(item, depth + 1);
+        return;
+      }
+      if (node.auction_id !== undefined && node.auction_id !== null) found.push(node);
+      for (const key in node) walk(node[key], depth + 1);
+    })(data, 0);
+
+    // Several things in the payload mention an auction_id without being an
+    // auction — the routing block, for one. Keep only objects that also carry
+    // something an auction actually has.
+    const rich = found.filter(
+      (x) =>
+        x.current_bid !== undefined ||
+        x.expire_date !== undefined ||
+        x.status_name !== undefined ||
+        x.unit_size !== undefined
+    );
+    const pool = rich.length ? rich : found;
+
+    // Prefer the id the URL names. If the payload describes exactly one
+    // auction, that's the one we're looking at, whatever it calls itself.
+    const a =
+      pool.find((x) => String(x.auction_id) === wanted) ??
+      (pool.length === 1 ? pool[0] : null);
+
+    if (!a) {
+      return {
+        problem: found.length
+          ? `Found ${found.length} auction records but none matching ${wanted || "this URL"}.`
+          : "No auction data on this page.",
+      };
+    }
 
     // "2026-08-25 17:45:00", already UTC, just not marked as such.
     const utc = a.expire_date?.utc?.datetime;
@@ -54,11 +98,18 @@
         ? "active"
         : "unknown";
 
+    // Manager's specials and private-seller units carry a type worth keeping
+    // in the name — they're a different proposition from a lien unit.
+    const kind = a.type_name && !/lien/i.test(a.type_name) ? a.type_name : null;
+
     return {
       source: "storagetreasures",
       external_id: String(a.auction_id),
       canonical_url: location.origin + location.pathname,
-      auto_name: [a.unit_size, a.facility_name].filter(Boolean).join(" · ") || null,
+      auto_name:
+        [a.unit_size, a.facility_name, kind].filter(Boolean).join(" · ") ||
+        document.title.split("|")[0].trim() ||
+        null,
       facility_name: a.facility_name ?? null,
       city: a.city ?? null,
       state: a.state ?? null,
@@ -72,13 +123,17 @@
   }
 
   // ── Bid13 ───────────────────────────────────────────────────
-  // Drupal, rendered on the server. The bid and the closing time are in
-  // the markup; the photos are loaded by script afterwards, which is why
-  // saving from a page you're looking at gets them and a server fetch can't.
+  // Drupal, rendered on the server. The bid and the closing time are in the
+  // markup; the photos arrive by script afterwards, which is why saving from
+  // a page you're looking at gets them and a server fetch can't.
   function bid13() {
     const bidEl = document.getElementById("high-bid-amount");
     const clock = document.querySelector(".countdown[data-expiry]");
-    if (!bidEl && !clock) return null;
+    if (!bidEl && !clock) {
+      return /\/storage-auctions\//.test(location.pathname)
+        ? { problem: "This looks like a listing, but the bid and clock weren't where Adelaide expects." }
+        : null;
+    }
 
     // Drupal stamps the node id onto the body: page-node-311086
     const node = String(document.body.className).match(/page-node-(\d+)/);
@@ -91,9 +146,8 @@
     const unitSlug = parts[parts.length - 1] || null;
 
     const expiry = clock ? Number(clock.getAttribute("data-expiry")) : NaN;
-    const ends_at = isFinite(expiry) && expiry > 0
-      ? new Date(expiry * 1000).toISOString()
-      : null;
+    const ends_at =
+      isFinite(expiry) && expiry > 0 ? new Date(expiry * 1000).toISOString() : null;
 
     const heading = document.querySelector("h1");
     const unit = heading ? heading.textContent.trim() : titleize(unitSlug);
@@ -102,8 +156,8 @@
       ? new Date(ends_at) < new Date() ? "ended" : "active"
       : "unknown";
 
-    // Drupal serves uploads from /sites/default/files/. Anything else on the
-    // page is site furniture — logos, icons, sponsor badges.
+    // Drupal serves uploads from /sites/default/files/. Everything else on
+    // the page is furniture — logos, icons, badges.
     const photos = [...document.images]
       .map((img) => img.currentSrc || img.src)
       .filter((u) => u && u.includes("/sites/default/files/"))
@@ -119,7 +173,7 @@
       state,
       unit_size: null,          // Bid13 doesn't publish one
       bid_cents: bidEl ? money(bidEl.textContent) : null,
-      total_bids: null,         // Bid13 doesn't publish one either
+      total_bids: null,         // nor a bid count
       ends_at,
       status,
       photos,
@@ -127,7 +181,10 @@
   }
 
   const host = location.hostname.replace(/^www\./, "");
-  if (host === "storagetreasures.com") return storagetreasures();
+  if (host === "storagetreasures.com") {
+    // Only listing URLs, not search results or facility pages.
+    return /\/auctions\//.test(location.pathname) ? storagetreasures() : null;
+  }
   if (host === "bid13.com") return bid13();
   return null;
 })();

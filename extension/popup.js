@@ -99,9 +99,14 @@ async function render() {
   show(user ? "signedin" : "signedout");
   if (!user) return;
 
-  current = await readActiveTab();
-  toggle("nolisting", !current);
+  const read = await readActiveTab();
+  const unreadable = read?.problem ?? null;
+  current = read?.source ? read : null;
+
+  toggle("nolisting", !read);
+  toggle("problem", Boolean(unreadable));
   toggle("listing", Boolean(current));
+  if (unreadable) $("problemwhy").textContent = unreadable;
   if (!current) return;
 
   saved = await findSaved(current.source, current.external_id);
