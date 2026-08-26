@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Adelaide</title>
+<meta name="description" content="A private storage-auction watchlist.">
+<meta name="theme-color" content="#0E6F66">
+<link rel="manifest" href="app.webmanifest">
+<link rel="icon" href="extension/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="web/icons/icon-192.png">
+<link rel="stylesheet" href="web/app.css">
+</head>
+<body>
+
+<header>
+  <h1>Adelaide</h1>
+  <div class="headtools">
+    <button id="reload" class="icon" title="Re-read the list" aria-label="Re-read the list" hidden>&#8635;</button>
+    <span class="who" id="who"></span>
+  </div>
+</header>
+
+<main>
+  <section id="setup" hidden>
+    <p>Not connected to a database yet.</p>
+    <p class="muted">Adelaide needs a Supabase project. See the README.</p>
+  </section>
+
+  <section id="signedout" hidden>
+    <p class="muted">Your watchlist is private to your account.</p>
+    <button id="signin">Sign in with Google</button>
+  </section>
+
+  <section id="signedin" hidden>
+    <p class="asof muted small">
+      Bids are as they were when each listing was last saved &mdash; nothing is
+      re-read here yet. Open a listing to see its live figure.
+    </p>
+
+    <p id="loading" class="muted">Reading your list&hellip;</p>
+
+    <div id="empty" hidden>
+      <p>Nothing saved yet.</p>
+      <p class="muted small">Open a unit on StorageTreasures or Bid13 and click
+      Adelaide in the toolbar.</p>
+    </div>
+
+    <ul class="list" id="open"></ul>
+
+    <h2 id="endedhead" hidden>Ended</h2>
+    <ul class="list" id="ended"></ul>
+
+    <button id="signout" class="quiet foot">Sign out</button>
+  </section>
+
+  <div id="error" class="err" hidden></div>
+</main>
+
+<script type="module" src="web/app.js"></script>
+</body>
+</html>

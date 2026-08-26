@@ -6,6 +6,10 @@ dist/
 .env.*
 *.zip
 
-# Your project URL and key. Real values stay on your machine; the shape of the
-# file is kept in config.example.js so a fresh clone knows what to fill in.
-extension/config.js
+# extension/config.js used to be ignored. It is committed now: the watchlist
+# page is a static site and has to ship the project URL and publishable key in
+# its files regardless, so a hidden second copy bought nothing. Both values are
+# designed to be public — the key grants nothing without a signed-in owner.
+#
+# What must never be committed is a key beginning sb_secret_, a service_role
+# key, or a database password. Those bypass every rule in the database.
