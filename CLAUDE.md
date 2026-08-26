@@ -4,6 +4,11 @@ The README says what this is and how to restore it. This file says where the
 work stands, and it is rewritten at every stopping point. If it disagrees with
 the code, the code is right and this needs updating.
 
+**[PLAN.md](PLAN.md) says what comes next** — the approved plan for the rest of
+the build, phases A to F. The two files divide the work between them: this one
+is the authority on what is *done*, `PLAN.md` on what is *not yet started*. The
+next thing to do is Phase A, verifying Bid13.
+
 Design document (milestones, reasoning, open questions):
 https://claude.ai/code/artifact/b70f24b6-7db1-4df4-a706-4f0ece72d831
 Setup walkthrough (Supabase, Google, Chrome):
@@ -67,7 +72,8 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **`npm test` before committing anything that touches `lib/parse.js`.**
   Nothing to install; it is node's own runner.
 - **At a stopping point:** update the section above, commit, push, and leave a
-  short handoff in the conversation. Next session starts by reading this file.
+  short handoff in the conversation. Next session starts by reading this file
+  and PLAN.md.
 - She is new to structured development and is learning this as we go. Explain
   the reasoning, not just the change — especially when something turns out to
   be wrong.
