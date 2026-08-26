@@ -2,12 +2,7 @@ import { isConfigured } from "./config.js";
 import { signIn, signOut, getUser } from "./lib/auth.js";
 import { findSaved, saveAuction } from "./lib/db.js";
 import { dollars, closing, title } from "./lib/format.js";
-import {
-  parseStorageTreasures,
-  parseBid13,
-  nextDataFromHtml,
-  auctionIdFromUrl,
-} from "./lib/parse.js";
+import { resolveListing } from "./lib/resolve.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,39 +31,13 @@ async function gather() {
   return hit?.result ?? null;
 }
 
-// Turn what the page gave us into a listing.
-//
-// StorageTreasures is a single-page app, so the data block in the document
-// belongs to whichever unit the tab loaded first, not the one you are looking
-// at now. When those disagree, ask the site for this page properly. That is
-// one request, on a deliberate click, and only when the shortcut won't do.
-async function resolve(raw) {
-  if (!raw) return null;
-  if (raw.problem) return { problem: raw.problem };
-
-  if (raw.source === "bid13") return parseBid13(raw);
-
-  const urlId = auctionIdFromUrl(raw.href);
-  const stale = Boolean(urlId && raw.payloadId && urlId !== raw.payloadId);
-
-  if (stale) {
-    try {
-      const html = await fetch(raw.href, { cache: "no-store", credentials: "omit" })
-        .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))));
-      const fresh = nextDataFromHtml(html);
-      if (fresh) return parseStorageTreasures(fresh, raw.href);
-    } catch {
-      // Fall through: the stale block still lists the other units at this
-      // facility, so the right one is usually in there — just read a little
-      // earlier than now. Better than refusing, as long as we say so.
-    }
-    const record = parseStorageTreasures(raw.nextData, raw.href);
-    if (!record.problem) record.stale = true;
-    return record;
-  }
-
-  return parseStorageTreasures(raw.nextData, raw.href);
-}
+// Asking the site for a page properly, when what the tab holds won't do.
+// The deciding is in lib/resolve.js, where it can be tested; this is only the
+// half that needs a network.
+const fetchText = (url) =>
+  fetch(url, { cache: "no-store", credentials: "omit" }).then((r) =>
+    r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))
+  );
 
 let current = null; // what the page says
 let saved = null;   // what we already hold, if anything
@@ -124,7 +93,7 @@ async function render() {
 
   let read = null;
   try {
-    read = await resolve(await gather());
+    read = await resolveListing(await gather(), fetchText);
   } catch (err) {
     // Injection is refused on chrome:// pages, the web store and the like.
     // Anywhere else, a failure here is worth saying out loud rather than

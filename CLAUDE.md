@@ -144,6 +144,13 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **StorageTreasures is a single-page app.** `__NEXT_DATA__` describes whichever
   page the tab loaded *first* and is never rewritten on navigation. The URL is
   the authority. A test fails if that stops being true.
+- **The first page need not have been a listing.** Staleness was detected by
+  comparing `pageProps.auction_id` against the URL — but a search or facility
+  page carries no `auction_id` at all, so there was nothing to compare, nothing
+  looked stale, and the fetch that exists for exactly this never fired. A unit
+  reached from a search refused to save, blaming the listing. Detecting a
+  problem by *what a check found* is not the same as detecting it by *whether
+  the check could run*.
 - **Its payload lies about types.** Ids and bid counts arrive as strings,
   `image` is an object, and the routing block carries an `auction_id` without
   being an auction.

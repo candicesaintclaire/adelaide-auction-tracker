@@ -108,14 +108,19 @@ export function parseStorageTreasures(nextDataText, href) {
        (pool.length === 1 ? pool[0] : null));
 
   if (!a) {
-    const stalePayload = Boolean(urlId && payloadId && urlId !== payloadId);
+    // The block belongs to whichever page this tab opened first. That shows up
+    // two ways: another unit's id, or — arriving from a search or facility
+    // page — no units at all and no id to have compared against. Both are the
+    // same fault, and saying "no auction data" for the second sent someone
+    // hunting for a broken listing when the listing was fine.
+    const stalePayload = Boolean(urlId) && payloadId !== urlId;
     return {
       problem:
         (found.length
           ? `This page's data describes ${pool.length} unit(s), none of them ${urlId ?? "this one"}.`
-          : "No auction data on this page.") +
+          : "This page's data block holds no auctions at all.") +
         (stalePayload
-          ? " You reached this unit by clicking through the site, and it kept the first page's data. Reloading the page fixes it."
+          ? " It describes whichever page this tab opened first, not this unit. Reloading the page fixes it."
           : ""),
       stalePayload,
     };
