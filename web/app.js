@@ -17,6 +17,11 @@ import {
   SOURCE_NAMES,
 } from "../extension/lib/format.js";
 
+// PROTOTYPE — branch prototype/watchlist-ui only. See web/prototype/.
+import { prototyping, currentVariant, mountSwitcher, describe } from "./prototype/switcher.js";
+import { sampleRows } from "./prototype/sample-rows.js";
+let sample = false;   // true when prototyping without a signed-in account
+
 const $ = (id) => document.getElementById(id);
 
 const show = (id) => {
@@ -148,6 +153,13 @@ function startRename(li, row) {
     const wanted = input.value.trim();
     if (wanted === (row.nickname ?? "")) return restore(title(row));
 
+    if (sample) {                          // PROTOTYPE: nothing to save to
+      row.nickname = wanted || null;
+      restore(title(row));
+      li.querySelector(".rename").textContent = row.nickname ? "Rename" : "Give it a name";
+      return;
+    }
+
     input.disabled = true;
     try {
       const updated = await setNickname(row.id, wanted);
@@ -174,9 +186,22 @@ async function renderList() {
   $("loading").hidden = false;
   $("reload").disabled = true;
   try {
-    const rows = await listAuctions();
+    const rows = sample ? (renderList.rows ??= sampleRows()) : await listAuctions();
     const now = Date.now();
     const { open, ended } = byClosing(rows, now);
+
+    // PROTOTYPE: B, C and D draw into their own box; A is the page as it is.
+    if (prototyping) {
+      const variant = currentVariant();
+      const box = document.getElementById("pv-box") ?? $("open").parentNode.insertBefore(
+        Object.assign(document.createElement("div"), { id: "pv-box" }), $("open"));
+      box.replaceChildren(...(variant.render ? [variant.render(rows, now, renderList)] : []));
+      for (const id of ["open", "ended", "endedhead"]) $(id).hidden = Boolean(variant.render);
+      describe(variant, `${sample ? "sample data" : "your data"} · ${open.length} open · ${ended.length} ended`);
+      $("empty").hidden = rows.length > 0;
+      $("error").hidden = true;
+      if (variant.render) return;
+    }
 
     $("open").replaceChildren(...open.map((r) => rowEl(r, now)));
     $("ended").replaceChildren(...ended.map((r) => rowEl(r, now)));
@@ -192,6 +217,24 @@ async function renderList() {
 }
 
 async function render() {
+  // PROTOTYPE: signed in, show the real list; otherwise, the sample one.
+  if (prototyping) {
+    const user = isConfigured() ? await getUser().catch(() => null) : null;
+    if (!user) {
+      sample = true;
+      $("who").textContent = "prototype";
+      const note = Object.assign(document.createElement("p"), {
+        className: "pv-samplenote",
+        textContent: "Prototype, with made-up units. Nothing here is saved or sent anywhere. " +
+          "Use ← → (or the bar below) to switch layouts.",
+      });
+      $("signedin").prepend(note);
+      $("signout").hidden = true;
+      show("signedin");
+      return renderList();
+    }
+  }
+
   if (!isConfigured()) return show("setup");
 
   // The commonest way for web sign-in to fail is an address that isn't in
@@ -223,6 +266,8 @@ $("signout").addEventListener("click", async () => {
 });
 
 $("reload").addEventListener("click", renderList);
+
+if (prototyping) mountSwitcher(renderList);
 
 // Coming back from Google, the session is on the fragment. Take it before
 // anything asks whether we are signed in — and take it off the address bar
