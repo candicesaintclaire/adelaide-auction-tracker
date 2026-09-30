@@ -159,6 +159,12 @@ const IMAGES = [
   "https://uccdn.bid13.com/thumbs/2026/08/19/MmEJGQL6dyOscBWsbp9nynwIzjjxj1pTLdvOCzKEEDB_440x250.webp",
 ];
 
+// The closing time is relative to "now" so this test cannot go stale: a
+// hard-coded date was correct until the day it passed, and then the parser
+// was right and the test was wrong.
+const b13Expiry = Math.floor(Date.now() / 1000) + 3 * 24 * 60 * 60;
+const b13EndsAt = new Date(b13Expiry * 1000).toISOString();
+
 const b13 = {
   href: "https://bid13.com/storage-auctions/wa/tacoma/self-storage-tacoma-east-44th/unit-a05-3",
   bodyClass:
@@ -166,7 +172,7 @@ const b13 = {
     "uc-product-node i18n-en section-storage-auctions user-role-anon ucAuction-processed",
   bidText: "$25",
   bidArea: "STARTING BID $25 NO BIDS YET TIME LEFT 01 DAYS : 01 HRS : 15 MIN : 06 SEC AUCTION INFO Unit Type: Lien",
-  expiry: "1787853600",
+  expiry: String(b13Expiry),
   heading: "Unit A05",
   facilityLine: "Self Storage of Tacoma - East 44th , Tacoma, WA",
   details: [
@@ -179,7 +185,7 @@ test("bid13: reads bid, close time, id and place", () => {
   const r = parseBid13(b13);
   assert.equal(r.external_id, "309691");
   assert.equal(r.bid_cents, 2500);
-  assert.equal(r.ends_at, "2026-08-27T18:00:00.000Z");
+  assert.equal(r.ends_at, b13EndsAt);
   assert.equal(r.city, "Tacoma");
   assert.equal(r.state, "WA");
   assert.equal(r.status, "active");
