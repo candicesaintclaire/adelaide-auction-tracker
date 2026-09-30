@@ -16,11 +16,12 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 
 ## Extra label: `deferred`
 
-Not one of the five triage roles; this repo's own addition. It marks an issue that has been **considered and deliberately put off**: not rejected, not forgotten, just not now (typically "not in the MVP"). The issue stays **open**, so it's still there to reconsider.
+Not one of the five triage roles; this repo's own addition. It marks an issue that has been **considered and deliberately put off**: not rejected, not forgotten, just not now (typically "not in the MVP").
 
-- Different from `wontfix`: `wontfix` closes the issue and, for a rejected enhancement, records the reason in `.out-of-scope/`. A deferral is temporary by nature, so it goes nowhere near `.out-of-scope/`.
-- When deferring, comment with why and what would bring it back, remove any triage label, and add `deferred`.
-- `/triage` leaves `deferred` issues alone unless asked to revisit them. Revisiting means removing `deferred` and triaging as normal.
+- **Deferring:** comment with why and what would bring it back, remove any triage label, add `deferred`, and close the issue as **Not planned** (`gh issue close <n> --reason "not planned"`). The open list then holds only live work.
+- **Finding them:** `gh issue list --state closed --label deferred`, or on the site, `label:deferred`.
+- **Revisiting:** reopen, remove `deferred`, and triage as normal.
+- **Different from `wontfix`:** `wontfix` means rejected, and for an enhancement records the reason in `.out-of-scope/`. A deferral is temporary by nature, so it goes nowhere near `.out-of-scope/`. Both close as Not planned; the label is what tells them apart.
 
 ## Assignment
 
