@@ -170,3 +170,19 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
   which beats the one the URL slug implies.
 - **`HIGH BIDDER` begins with `BID`.** A bid-count regex needs its `\b`, for
   the same reason `"Non-Lien"` needs an anchor.
+
+---
+
+## Agent skills
+
+### Issue tracker
+
+Issues for this repo live as GitHub issues, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles use same-named labels — `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` and `docs/adr/` at the repo root, created lazily as terms and decisions land. See `docs/agents/domain.md`.
