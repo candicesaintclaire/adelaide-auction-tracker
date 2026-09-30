@@ -13,3 +13,7 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
 Edit the right-hand column to match whatever vocabulary you actually use.
+
+## Assignment
+
+In this repo, `ready-for-human` always means Candice (`candicesaintclaire`), and every issue carrying it is assigned to her. `.github/workflows/assign-ready-for-human.yml` does this automatically whenever the label is added, however it's added. A skill applying the label needs to do nothing more. If the Action ever looks not to have run, `gh issue edit <number> --add-assignee candicesaintclaire` is the manual equivalent.

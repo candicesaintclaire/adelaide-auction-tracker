@@ -1,0 +1,26 @@
+# Whenever an issue gets the ready-for-human label — from the website, from
+# gh, or from a skill — assign it to Candice, so it shows up under "Assigned
+# to you" and in her notifications.
+#
+# This is repo housekeeping on GitHub's servers, not part of Adelaide: the
+# app's "nothing runs on its own" rule is about the app, and is unaffected.
+
+name: Assign ready-for-human issues
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    if: github.event.label.name == 'ready-for-human'
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh issue edit "$NUMBER" --repo "$REPO" --add-assignee candicesaintclaire
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
