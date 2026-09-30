@@ -7,8 +7,11 @@ the code, the code is right and this needs updating.
 **[PLAN.md](PLAN.md) says what comes next** — the approved plan for the rest of
 the build, phases A to F. The two files divide the work between them: this one
 is the authority on what is *done*, `PLAN.md` on what is *not yet started*.
-Phases A, B and C are built; the next thing needing *her* is flipping the repo
-public and switching GitHub Pages on.
+Phases A, B and C are built. **As of 30 September 2026** the repo is public and
+GitHub Pages is live (github.io and `candicesaintclaire.com`); the remaining
+work lives as GitHub issues (tracker config in `docs/agents/`), and the next
+things needing *her* are **#3** — the Supabase allow-list — then **#4** —
+sign-in on the web.
 
 Design document (milestones, reasoning, open questions):
 https://claude.ai/code/artifact/b70f24b6-7db1-4df4-a706-4f0ece72d831
@@ -107,9 +110,13 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 - **At a stopping point:** update the section above, commit, push, and leave a
   short handoff in the conversation. Next session starts by reading this file
   and PLAN.md.
-- She is new to structured development and is learning this as we go. Explain
-  the reasoning, not just the change — especially when something turns out to
-  be wrong.
+- **She is new to structured development, and this is her first project run
+  through this workflow** — the Matt Pocock skills, the GitHub Issues tracker,
+  the ticket lifecycle. Hold her hand: explain the reasoning, not just the
+  change; say what each skill or convention is for when it comes up; give her
+  concrete, numbered steps for anything only she can do (browser checks,
+  dashboard settings, decisions) and wait for her. Especially when something
+  turns out to be wrong.
 
 ---
 
