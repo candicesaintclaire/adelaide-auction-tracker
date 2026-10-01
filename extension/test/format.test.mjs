@@ -81,11 +81,13 @@ test("the last hour counts down in minutes and seconds, as the sites' own clocks
   assert.equal(closesText(s(65), T), "Closes in 1:05", "seconds always take two digits");
 });
 
-test("beyond the hour it reads as the popup does, after the word Closes", () => {
+test("beyond the hour it reads as the popup does, after the word Closes, with rounded days marked", () => {
   assert.equal(closesText(s(3600), T), "Closes in 60:00",
     "exactly an hour is still inside it: 60:00, not a jump to '1 hr'");
   assert.equal(closesText(at(3), T), "Closes in 3 hr");
-  assert.equal(closesText(at(72), T), "Closes in 3 days");
+  assert.equal(closesText(at(72), T), "Closes in ~3 days");
+  assert.equal(closesText(at(52), T), "Closes in ~2 days",
+    "days are rounded, and say so: 52 hours sits under This week, not Within 2 days");
 });
 
 test("a closed unit says so, and a unit with no closing time says nothing", () => {

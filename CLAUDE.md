@@ -49,6 +49,16 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
   precedent — code that has only passed tests has been wrong four times out of
   four — so treat the untested half as wrong until a browser says otherwise.
 
+- **#15, the countdown watchlist** — cards grouped under headings from
+  "Closing within 10 min" to "Later", a live clock (seconds in the last hour,
+  from the saved closing time, no requests), and "Change / Remove nickname".
+  The grouping and wording are tested in `format.js`. Driven in Chrome with
+  made-up units on the throwaway `prototype/watchlist-ui` branch (worktree
+  `~/adelaide-prototype`, `npm run prototype`), whose variant A *is* this page:
+  headings and order, ticking, a unit changing heading mid-edit without losing
+  what was typed, remove-nickname, no requests from the clock, no sideways
+  scroll at 390px. Same gaps as above: no real data until #4.
+
 **Not done, roughly in the order it matters:**
 
 1. **Two things only she can do.** Flip the repo public; turn on GitHub Pages
@@ -144,7 +154,10 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
   `site_config` table so honouring it is a setting, not a memory.
 - **Nothing runs on its own.** No background worker, no alarms, no content
   scripts. Opening the popup is what grants a one-time look at the current tab.
-  This is a design commitment, not an implementation detail.
+  This is a design commitment, not an implementation detail. The watchlist's
+  ticking clock does not break it: it reads only the device's clock and the
+  closing times already saved, and sends nothing anywhere. Re-checking a site
+  on a timer would break it — that idea is parked on #12 as a decision.
 
 ## Things that were expensive to learn
 
