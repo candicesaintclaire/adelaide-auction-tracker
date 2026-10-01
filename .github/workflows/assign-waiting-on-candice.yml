@@ -1,0 +1,28 @@
+# Whenever an issue gets the ready-for-human or needs-info label — from the
+# website, from gh, or from a skill — assign it to Candice, so it shows up
+# under "Assigned to you" and in her notifications. Both mean "waiting on
+# her". If a needs-info issue is ever waiting on someone else, reassign it by
+# hand; this only adds, never removes.
+#
+# This is repo housekeeping on GitHub's servers, not part of Adelaide: the
+# app's "nothing runs on its own" rule is about the app, and is unaffected.
+
+name: Assign issues waiting on Candice
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    if: contains(fromJSON('["ready-for-human", "needs-info"]'), github.event.label.name)
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh issue edit "$NUMBER" --repo "$REPO" --add-assignee candicesaintclaire
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}

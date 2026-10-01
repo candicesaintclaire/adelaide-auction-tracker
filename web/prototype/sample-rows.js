@@ -28,6 +28,31 @@ export function sampleRows(now = Date.now()) {
   const batch = at(52); // two Bid13 units at one facility closing together
   return [
     {
+      // Crosses from "Within 30 min" into "Closing within 10 min" 20 s after loading.
+      id: "t1", source: B13, nickname: null, auto_name: "Stor-N-Lock — 5x5",
+      facility_name: "Stor-N-Lock", city: "Glendale", state: "AZ", unit_size: "5x5",
+      bid_cents: 1500, first_bid_cents: 1000, total_bids: null, ends_at: at(620 / 3600), status: "active",
+      auction_photos: [{ url: photo("#4f6a7a") }],
+    },
+    {
+      id: "t2", source: ST, nickname: "Last-minute one", auto_name: "CubeSmart — 5x10",
+      facility_name: "CubeSmart", city: "Gilbert", state: "AZ", unit_size: "5x10",
+      bid_cents: 6000, first_bid_cents: 3000, total_bids: 6, ends_at: at(2 / 60), status: "active",
+      auction_photos: [{ url: photo("#7a4f5e") }],
+    },
+    {
+      id: "t3", source: ST, nickname: null, auto_name: "Public Storage — 10x10",
+      facility_name: "Public Storage", city: "Mesa", state: "AZ", unit_size: "10x10",
+      bid_cents: 9000, first_bid_cents: 9000, total_bids: 3, ends_at: at(45 / 60), status: "active",
+      auction_photos: [{ url: photo("#5e7a4f") }],
+    },
+    {
+      id: "t4", source: B13, nickname: null, auto_name: "Storage King USA — 10x10",
+      facility_name: "Storage King USA", city: "Tempe", state: "AZ", unit_size: "10x10",
+      bid_cents: 100, first_bid_cents: 100, total_bids: 0, ends_at: at(5), status: "active",
+      auction_photos: [],
+    },
+    {
       id: "s1", source: ST, nickname: "Blue couch unit", auto_name: "SecureSpace Self Stora… — 10x10",
       facility_name: "SecureSpace Self Stora…", city: "Phoenix", state: "AZ", unit_size: "10x10",
       bid_cents: 12500, first_bid_cents: 8000, total_bids: 4, ends_at: at(3), status: "active",

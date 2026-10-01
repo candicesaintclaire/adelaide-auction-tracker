@@ -60,3 +60,53 @@ export const SOURCE_NAMES = {
   storagetreasures: "StorageTreasures",
   bid13: "Bid13",
 };
+
+// ── the watchlist's countdown ─────────────────────────────────
+//
+// The web page's own wording, so the popup's "Closes" label beside closing()
+// stays as it is. Inside the last hour it ticks in minutes and seconds — the
+// sites publish their closing times to the second, and so do we.
+export function closesText(iso, now = Date.now()) {
+  const ms = iso ? new Date(iso) - now : NaN;
+  if (Number.isNaN(ms)) return "";
+  if (ms <= 0) return "Closed";
+  if (ms > 3.6e6) return `Closes ${closing(iso, now)}`;
+  const secs = Math.ceil(ms / 1000);
+  return `Closes in ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+}
+
+// The watchlist's headings, tightest first. Each bound is inclusive: a unit
+// exactly two days out is "within 2 days", one second more is "this week".
+// "2 days" rather than "48 hours", so a heading doesn't sound more exact than
+// it is.
+const MIN = 6e4;
+const COUNTDOWN = [
+  ["Closing within 10 min", 10 * MIN],
+  ["Within 30 min", 30 * MIN],
+  ["Within 60 min", 60 * MIN],
+  ["Within 2 hours", 120 * MIN],
+  ["Within 6 hours", 360 * MIN],
+  ["Within 24 hours", 1440 * MIN],
+  ["Within 2 days", 2880 * MIN],
+  ["This week", 7 * 1440 * MIN],
+  ["Later", Infinity],
+];
+
+export function countdownGroup(row, now = Date.now()) {
+  if (hasEnded(row, now)) return "Ended";
+  const ms = row.ends_at ? new Date(row.ends_at) - now : NaN;
+  if (Number.isNaN(ms)) return "No closing time yet";
+  return COUNTDOWN.find(([, bound]) => ms <= bound)[0];
+}
+
+// The whole watchlist as headed groups, top to bottom. Order within a group is
+// byClosing's: soonest first, most recently ended first. Empty headings are
+// left out.
+const GROUP_ORDER = [...COUNTDOWN.map(([label]) => label), "No closing time yet", "Ended"];
+
+export function byCountdown(rows, now = Date.now()) {
+  const { open, ended } = byClosing(rows, now);
+  const groups = new Map(GROUP_ORDER.map((label) => [label, []]));
+  for (const row of [...open, ...ended]) groups.get(countdownGroup(row, now)).push(row);
+  return [...groups].filter(([, list]) => list.length).map(([label, rows]) => ({ label, rows }));
+}

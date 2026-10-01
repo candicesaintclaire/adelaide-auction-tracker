@@ -4,7 +4,10 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dollars, closing, ago, hasEnded, byClosing, title } from "../lib/format.js";
+import {
+  dollars, closing, ago, hasEnded, byClosing, title,
+  closesText, countdownGroup, byCountdown,
+} from "../lib/format.js";
 
 const T = Date.parse("2026-08-26T12:00:00Z");
 const at = (h) => new Date(T + h * 3.6e6).toISOString();
@@ -64,4 +67,84 @@ test("a nickname wins, but only if it says something", () => {
   assert.equal(title({ nickname: "   ", auto_name: "Unit A05" }), "Unit A05");
   assert.equal(title({ nickname: null, auto_name: "Unit A05" }), "Unit A05");
   assert.equal(title({}), "Untitled unit");
+});
+
+// ── the watchlist's countdown ─────────────────────────────────
+
+const m = (min) => at(min / 60);
+const s = (sec) => at(sec / 3600);
+
+test("the last hour counts down in minutes and seconds, as the sites' own clocks do", () => {
+  assert.equal(closesText(s(512), T), "Closes in 8:32");
+  assert.equal(closesText(s(3599), T), "Closes in 59:59");
+  assert.equal(closesText(s(1), T), "Closes in 0:01");
+  assert.equal(closesText(s(65), T), "Closes in 1:05", "seconds always take two digits");
+});
+
+test("beyond the hour it reads as the popup does, after the word Closes", () => {
+  assert.equal(closesText(s(3600), T), "Closes in 60:00",
+    "exactly an hour is still inside it: 60:00, not a jump to '1 hr'");
+  assert.equal(closesText(at(3), T), "Closes in 3 hr");
+  assert.equal(closesText(at(72), T), "Closes in 3 days");
+});
+
+test("a closed unit says so, and a unit with no closing time says nothing", () => {
+  assert.equal(closesText(at(-1), T), "Closed");
+  assert.equal(closesText(at(0), T), "Closed", "the closing second itself is closed");
+  assert.equal(closesText(null, T), "");
+  assert.equal(closesText("not a date", T), "");
+});
+
+test("each unit sits under the tightest heading it fits, edges included", () => {
+  const group = (ends_at) => countdownGroup({ status: "active", ends_at }, T);
+  assert.equal(group(s(1)), "Closing within 10 min");
+  assert.equal(group(m(10)), "Closing within 10 min", "exactly 10 min is within 10 min");
+  assert.equal(group(s(601)), "Within 30 min");
+  assert.equal(group(m(30)), "Within 30 min");
+  assert.equal(group(m(31)), "Within 60 min");
+  assert.equal(group(m(60)), "Within 60 min");
+  assert.equal(group(m(61)), "Within 2 hours");
+  assert.equal(group(at(2)), "Within 2 hours");
+  assert.equal(group(at(5)), "Within 6 hours");
+  assert.equal(group(at(6)), "Within 6 hours");
+  assert.equal(group(at(7)), "Within 24 hours");
+  assert.equal(group(at(24)), "Within 24 hours");
+  assert.equal(group(at(25)), "Within 2 days");
+  assert.equal(group(at(48)), "Within 2 days", "exactly 2 days is within 2 days");
+  assert.equal(group(s(48 * 3600 + 1)), "This week", "one second past 2 days is this week");
+  assert.equal(group(at(7 * 24)), "This week");
+  assert.equal(group(s(7 * 24 * 3600 + 1)), "Later");
+  assert.equal(group(at(30 * 24)), "Later");
+});
+
+test("ended and undated units have headings of their own", () => {
+  assert.equal(countdownGroup({ status: "active", ends_at: at(-1) }, T), "Ended");
+  assert.equal(countdownGroup({ status: "ended", ends_at: at(5) }, T), "Ended", "the site saying so wins");
+  assert.equal(countdownGroup({ status: "unknown", ends_at: null }, T), "No closing time yet");
+  assert.equal(countdownGroup({ status: "active", ends_at: "not a date" }, T), "No closing time yet");
+});
+
+test("the watchlist reads top to bottom: soonest heading first, empty headings left out", () => {
+  const rows = [
+    { id: "later", ends_at: at(10 * 24) },
+    { id: "gone", ends_at: at(-3) },
+    { id: "undated", ends_at: null },
+    { id: "five-min", ends_at: m(5) },
+    { id: "two-min", ends_at: m(2) },
+    { id: "gone-earlier", ends_at: at(-20) },
+    { id: "four-days", ends_at: at(4 * 24) },
+  ];
+  const groups = byCountdown(rows, T).map((g) => [g.label, g.rows.map((r) => r.id)]);
+  assert.deepEqual(groups, [
+    ["Closing within 10 min", ["two-min", "five-min"]],
+    ["This week", ["four-days"]],
+    ["Later", ["later"]],
+    ["No closing time yet", ["undated"]],
+    ["Ended", ["gone", "gone-earlier"]],
+  ]);
+});
+
+test("byCountdown copes with nothing at all", () => {
+  assert.deepEqual(byCountdown([], T), []);
+  assert.deepEqual(byCountdown(undefined, T), []);
 });

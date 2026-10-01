@@ -90,6 +90,7 @@ button.icon {
 .figures { text-align: right; white-space: nowrap; }
 .bid { display: block; font-family: var(--mono); font-size: 15px; font-weight: 600; }
 .was, .when { display: block; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.when { font-variant-numeric: tabular-nums; }   /* ticking seconds must not jiggle */
 .was.up { color: var(--signal); }
 .when.soon { color: var(--signal); }
 
@@ -99,7 +100,12 @@ button.icon {
   background: none; color: var(--muted); border-color: var(--line);
 }
 .rename:hover { color: var(--accent); border-color: var(--accent); filter: none; }
+/* Countdown headings: the first sits right under the note above it. */
+#groups > h2:first-child { margin-top: 0; }
+
+.nameedit-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .nameedit {
+  flex: 1 1 140px; min-width: 0;
   font: inherit; font-weight: 600; width: 100%; padding: 5px 8px;
   border: 1px solid var(--accent); border-radius: 6px;
   background: var(--paper); color: var(--ink);
