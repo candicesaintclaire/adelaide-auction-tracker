@@ -13,6 +13,15 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## Who acts: agents use `Candices-Agent`
+
+Agents working in this repo act on GitHub as **`Candices-Agent`**, a machine account with Write access, so GitHub shows the agent's name rather than Candice's on everything an agent does: labels, comments, issues, pushes. Commits still carry Candice as author and the agent as `Co-Authored-By`.
+
+- **Check before the first write of a session:** `gh auth status` should show `Candices-Agent` as the active account. If it shows `candicesaintclaire`, run `gh auth switch --user Candices-Agent`; never act as her by default.
+- **Sign every comment** with the agent's own name on a last line, e.g. `— Claude (via Claude Code)`. The account is shared by every agent she uses, so the signature is what tells them apart.
+- **Labels and assignments can't be signed.** The account name is the only record there.
+- **Workflow files:** the agent's token lacks the `workflow` scope, so a push that changes `.github/workflows/` will be refused. Ask her to run `gh auth refresh -s workflow` (as `Candices-Agent`, in her incognito window) when that first comes up; don't switch to her account to get round it.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
