@@ -10,8 +10,9 @@ import { signIn, signOut, getUser, adoptRedirect, redirectUrl } from "../extensi
 import { listAuctions, setNickname } from "../extension/lib/db.js";
 import {
   dollars,
-  closing,
-  byClosing,
+  closesText,
+  countdownGroup,
+  byCountdown,
   hasEnded,
   title,
   SOURCE_NAMES,
@@ -80,11 +81,19 @@ function figures(row, now) {
     box.append(el("span", "was", "no bids"));
   }
 
-  const when = el("span", "when", closing(row.ends_at, now));
-  const ms = row.ends_at ? new Date(row.ends_at) - now : NaN;
-  if (ms > 0 && ms < 12 * 3.6e6) when.classList.add("soon");
+  const when = el("span", "when");
+  when.dataset.endsAt = row.ends_at ?? "";
+  setWhen(when, now);
   box.append(when);
   return box;
+}
+
+// The closing line, rewritten in place by the ticker below.
+function setWhen(when, now) {
+  const iso = when.dataset.endsAt || null;
+  when.textContent = closesText(iso, now);
+  const ms = iso ? new Date(iso) - now : NaN;
+  when.classList.toggle("soon", ms > 0 && ms < 12 * 3.6e6);
 }
 
 function rowEl(row, now) {
@@ -107,7 +116,7 @@ function rowEl(row, now) {
   main.append(name, el("p", "meta", meta.join(" · ")));
 
   const tools = el("div", "tools");
-  const rename = el("button", "rename", row.nickname ? "Rename" : "Give it a name");
+  const rename = el("button", "rename", renameLabel(row));
   rename.addEventListener("click", () => startRename(li, row));
   tools.append(rename);
 
@@ -120,16 +129,36 @@ function rowEl(row, now) {
 // The one field a person owns. db.js has always refused to overwrite it on a
 // save; this is the first thing that offers to set it.
 
+const renameLabel = (row) => (row.nickname ? "Change nickname" : "Nickname this unit");
+
 function startRename(li, row) {
   const main = li.querySelector(".main");
   const name = main.querySelector(".name");
   if (!name) return;                       // already editing
 
+  const box = el("div", "nameedit-row");
   const input = el("input", "nameedit");
   input.value = row.nickname ?? "";
   input.placeholder = row.auto_name ?? "A name for this unit";
-  input.setAttribute("aria-label", "Name for this unit");
-  name.replaceWith(input);
+  input.setAttribute("aria-label", "Nickname for this unit");
+  box.append(input);
+
+  // Only offered when there is a nickname to remove. It saves an empty one,
+  // which db.js already reads as "go back to the site's name". mousedown, not
+  // click: a click lets the box lose focus first, and losing focus saves
+  // whatever is typed — the opposite of what was asked.
+  if (row.nickname) {
+    const remove = el("button", "rename remove", "Remove nickname");
+    remove.type = "button";
+    remove.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      input.value = "";
+      commit();
+    });
+    box.append(remove);
+  }
+
+  name.replaceWith(box);
   input.focus();
   input.select();
 
@@ -139,7 +168,8 @@ function startRename(li, row) {
     back.href = row.canonical_url;
     back.target = "_blank";
     back.rel = "noreferrer noopener";
-    input.replaceWith(back);
+    box.replaceWith(back);
+    if (pendingRedraw) redraw();
   };
 
   const commit = async () => {
@@ -154,7 +184,7 @@ function startRename(li, row) {
       row.nickname = updated?.nickname ?? null;
       // Blank means "go back to the site's name", not "no name at all".
       restore(title(row));
-      li.querySelector(".rename").textContent = row.nickname ? "Rename" : "Give it a name";
+      li.querySelector(".rename").textContent = renameLabel(row);
     } catch (err) {
       restore(title(row));
       fail(err);
@@ -170,17 +200,69 @@ function startRename(li, row) {
 
 // ── the page ──────────────────────────────────────────────────
 
+// What is on screen, and the heading each unit was drawn under — the ticker
+// compares against these to know when a unit has moved.
+let shown = [];
+let drawnUnder = new Map();
+let pendingRedraw = false;
+
+function redraw() {
+  pendingRedraw = false;
+  const now = Date.now();
+  const groups = byCountdown(shown, now);
+  drawnUnder = new Map(shown.map((r) => [r.id, countdownGroup(r, now)]));
+  $("groups").replaceChildren(
+    ...groups.flatMap(({ label, rows }) => {
+      const list = el("ul", "list");
+      list.append(...rows.map((r) => rowEl(r, now)));
+      return [el("h2", null, label), list];
+    })
+  );
+  tick();
+}
+
+// ── the clock ─────────────────────────────────────────────────
+//
+// Counts down from the closing times already saved, on this device's own
+// clock. It sends nothing anywhere — no auction site, no database — which is
+// why it sits comfortably with "nothing runs on its own": that rule is about
+// reading the sites, and this reads only the clock. Every second while any
+// unit is inside its last hour, every minute otherwise, and not at all while
+// the page is out of sight.
+
+let timer = null;
+
+function tick() {
+  clearTimeout(timer);
+  timer = null;
+  if (document.hidden || !shown.length) return;
+  const now = Date.now();
+
+  for (const when of document.querySelectorAll("#groups .when")) setWhen(when, now);
+
+  // A unit that has crossed into the next heading needs the list redrawn —
+  // but never under someone typing a nickname, which a redraw would discard.
+  if (shown.some((r) => countdownGroup(r, now) !== drawnUnder.get(r.id))) {
+    if (document.querySelector("#groups .nameedit")) pendingRedraw = true;
+    else return redraw();
+  }
+
+  const lastHour = shown.some((r) => {
+    const ms = r.ends_at ? new Date(r.ends_at) - now : NaN;
+    return ms > 0 && ms <= 3.6e6;
+  });
+  timer = setTimeout(tick, lastHour ? 1000 - (now % 1000) : 60000 - (now % 60000));
+}
+
+document.addEventListener("visibilitychange", tick);
+
 async function renderList() {
   $("loading").hidden = false;
   $("reload").disabled = true;
   try {
     const rows = await listAuctions();
-    const now = Date.now();
-    const { open, ended } = byClosing(rows, now);
-
-    $("open").replaceChildren(...open.map((r) => rowEl(r, now)));
-    $("ended").replaceChildren(...ended.map((r) => rowEl(r, now)));
-    $("endedhead").hidden = ended.length === 0;
+    shown = rows;
+    redraw();
     $("empty").hidden = rows.length > 0;
     $("error").hidden = true;
   } catch (err) {
@@ -219,6 +301,8 @@ $("signin").addEventListener("click", async (e) => {
 
 $("signout").addEventListener("click", async () => {
   await signOut();
+  shown = [];
+  $("groups").replaceChildren();
   await render();
 });
 
