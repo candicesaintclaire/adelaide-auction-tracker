@@ -70,7 +70,9 @@ export function closesText(iso, now = Date.now()) {
   const ms = iso ? new Date(iso) - now : NaN;
   if (Number.isNaN(ms)) return "";
   if (ms <= 0) return "Closed";
-  if (ms > 3.6e6) return `Closes ${closing(iso, now)}`;
+  // Days are rounded, so they say so: 52 hours reads "~2 days" while sitting
+  // under "This week", and the tilde keeps the two from contradicting.
+  if (ms > 3.6e6) return `Closes ${closing(iso, now).replace(/^in (\d+ days)$/, "in ~$1")}`;
   const secs = Math.ceil(ms / 1000);
   return `Closes in ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
 }
