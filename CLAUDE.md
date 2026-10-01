@@ -53,8 +53,9 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
   "Closing within 10 min" to "Later", a live clock (seconds in the last hour,
   from the saved closing time, no requests), and "Change / Remove nickname".
   The grouping and wording are tested in `format.js`. Driven in Chrome with
-  made-up units on the throwaway `prototype/watchlist-ui` branch (worktree
-  `~/adelaide-prototype`, `npm run prototype`), whose variant A *is* this page:
+  made-up units on the throwaway `prototype/watchlist-ui` branch (to look again:
+  `git worktree add ../adelaide-prototype prototype/watchlist-ui`, then
+  `npm run prototype` there), whose variant A *is* this page:
   headings and order, ticking, a unit changing heading mid-edit without losing
   what was typed, remove-nickname, no requests from the clock, no sideways
   scroll at 390px. She checked it there too, 30 Sep 2026, and approved it.
