@@ -197,6 +197,10 @@ https://claude.ai/code/artifact/69e5c724-b7a0-46bd-8152-23ce126fa072
 
 ## Agent skills
 
+### Where the skills live
+
+Matt Pocock's skills are committed in `.claude/skills/` (a vendored copy, with the source commit recorded in `.claude/skills/README.md`), so they load in every session that clones this repo, cloud or local. Do not rely on a plugin install for this project.
+
 ### Issue tracker
 
 Issues for this repo live as GitHub issues, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
